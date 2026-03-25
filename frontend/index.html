@@ -3,358 +3,528 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sharedum DApp</title>
+  <title>VedicBot — Ancient Wisdom, Modern Interface</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #0f1117;
-      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      background: #0d0d0d;
+      color: #e8e0d0;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 40px 16px;
     }
 
+    /* ── Header ── */
     header {
-      width: 100%;
-      max-width: 900px;
+      background: #111111;
+      border-bottom: 1px solid #2a2010;
+      padding: 14px 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 24px;
-      background: #1a1d27;
-      border-radius: 12px;
-      border: 1px solid #2d3148;
-      margin-bottom: 40px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
-    .logo { font-size: 1.4rem; font-weight: 700; color: #7c3aed; }
-    .logo span { color: #a78bfa; }
+    .logo {
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #f5a623;
+      letter-spacing: 0.05em;
+    }
+
+    .logo span {
+      color: #ff6b00;
+    }
+
+    .logo-sub {
+      font-size: 0.65rem;
+      color: #7a6a50;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
     #connectBtn {
-      padding: 10px 22px;
-      border: none;
+      padding: 8px 18px;
+      border: 1px solid #f5a623;
       border-radius: 8px;
-      background: #7c3aed;
-      color: #fff;
-      font-size: 0.95rem;
+      background: transparent;
+      color: #f5a623;
+      font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      transition: all 0.2s;
     }
-    #connectBtn:hover { background: #6d28d9; }
-    #connectBtn:active { transform: scale(0.97); }
-    #connectBtn.connected { background: #059669; cursor: default; }
+    #connectBtn:hover { background: #f5a62322; }
+    #connectBtn.connected { border-color: #10b981; color: #10b981; }
 
-    .wallet-info {
+    .wallet-badge {
       display: none;
+      font-size: 0.75rem;
+      color: #7a6a50;
+      font-family: monospace;
+    }
+    .wallet-badge.visible { display: block; }
+
+    /* ── Layout ── */
+    .app-container {
+      flex: 1;
+      display: flex;
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 16px;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Language selector ── */
+    .lang-bar {
+      display: flex;
       align-items: center;
       gap: 10px;
-      background: #111827;
-      border: 1px solid #2d3148;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 0.85rem;
-    }
-    .wallet-info.visible { display: flex; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex-shrink: 0; }
-    .address { font-family: monospace; color: #a78bfa; }
-    .balance { color: #94a3b8; margin-left: 6px; }
-
-    main {
-      width: 100%;
-      max-width: 900px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
+      flex-wrap: wrap;
     }
 
-    .card {
-      background: #1a1d27;
-      border: 1px solid #2d3148;
-      border-radius: 12px;
-      padding: 24px;
+    .lang-label {
+      font-size: 0.75rem;
+      color: #7a6a50;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
     }
-    .card h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 10px; }
-    .card .value { font-size: 1.4rem; font-weight: 700; color: #e2e8f0; word-break: break-all; }
-    .card .sub { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
 
-    #networkBadge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 4px 12px;
+    .lang-btn {
+      padding: 5px 14px;
       border-radius: 20px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #94a3b8;
-      margin-top: 6px;
-    }
-    #networkBadge.correct { border-color: #7c3aed; color: #a78bfa; }
-
-    .action-card {
-      background: #1a1d27;
-      border: 1px solid #2d3148;
-      border-radius: 12px;
-      padding: 24px;
-      grid-column: 1 / -1;
-    }
-    .action-card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
-
-    .input-row { display: flex; gap: 10px; flex-wrap: wrap; }
-    .input-row input {
-      flex: 1;
-      min-width: 180px;
-      padding: 10px 14px;
-      background: #111827;
-      border: 1px solid #2d3148;
-      border-radius: 8px;
-      color: #e2e8f0;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .input-row input:focus { border-color: #7c3aed; }
-    .input-row button, .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      background: #7c3aed;
-      color: #fff;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-    .input-row button:hover, .btn:hover { background: #6d28d9; }
-    .input-row button:disabled, .btn:disabled { background: #374151; cursor: not-allowed; }
-
-    #statusMsg {
-      margin-top: 14px;
-      font-size: 0.85rem;
-      color: #a78bfa;
-      min-height: 20px;
-    }
-    #statusMsg.error { color: #f87171; }
-    #statusMsg.success { color: #34d399; }
-
-    #addNetworkBtn {
-      display: none;
-      margin-top: 12px;
-    }
-    #addNetworkBtn.visible { display: inline-block; }
-
-    footer {
-      margin-top: 48px;
+      border: 1px solid #2a2010;
+      background: #111111;
+      color: #a09070;
       font-size: 0.8rem;
-      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-btn:hover { border-color: #f5a623; color: #f5a623; }
+    .lang-btn.active {
+      background: #f5a62322;
+      border-color: #f5a623;
+      color: #f5a623;
+      font-weight: 600;
+    }
+
+    /* ── Chat window ── */
+    .chat-window {
+      flex: 1;
+      background: #111111;
+      border: 1px solid #2a2010;
+      border-radius: 16px;
+      padding: 20px;
+      min-height: 420px;
+      max-height: 500px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .chat-window::-webkit-scrollbar { width: 4px; }
+    .chat-window::-webkit-scrollbar-track { background: transparent; }
+    .chat-window::-webkit-scrollbar-thumb { background: #2a2010; border-radius: 4px; }
+
+    /* ── Welcome message ── */
+    .welcome {
+      text-align: center;
+      padding: 30px 20px;
+      opacity: 0.7;
+    }
+    .welcome .om {
+      font-size: 3rem;
+      color: #f5a623;
+      margin-bottom: 12px;
+    }
+    .welcome h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      color: #c8a870;
+      margin-bottom: 8px;
+    }
+    .welcome p {
+      font-size: 0.85rem;
+      color: #7a6a50;
+      line-height: 1.6;
+    }
+
+    /* ── Messages ── */
+    .message {
+      display: flex;
+      gap: 10px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .avatar.bot { background: #2a1a00; border: 1px solid #f5a62344; }
+    .avatar.user-av { background: #1a1a2a; border: 1px solid #6060a044; }
+
+    .bubble {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      line-height: 1.65;
+    }
+
+    .message.bot .bubble {
+      background: #1a1500;
+      border: 1px solid #2a2010;
+      border-top-left-radius: 4px;
+      color: #e8e0d0;
+    }
+
+    .message.user .bubble {
+      background: #1e1400;
+      border: 1px solid #f5a62333;
+      border-top-right-radius: 4px;
+      color: #f5d990;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 4px 0;
+    }
+    .typing-indicator span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #f5a623;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* ── Input area ── */
+    .input-area {
+      display: flex;
+      gap: 10px;
+      background: #111111;
+      border: 1px solid #2a2010;
+      border-radius: 14px;
+      padding: 10px 14px;
+      align-items: flex-end;
+    }
+
+    #messageInput {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #e8e0d0;
+      font-size: 0.95rem;
+      font-family: 'Inter', sans-serif;
+      resize: none;
+      max-height: 100px;
+      line-height: 1.5;
+    }
+
+    #messageInput::placeholder { color: #4a4030; }
+
+    #sendBtn {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: none;
+      background: #f5a623;
+      color: #0d0d0d;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    #sendBtn:hover { background: #ff6b00; }
+    #sendBtn:disabled { background: #2a2010; color: #4a4030; cursor: not-allowed; }
+
+    /* ── Suggestions ── */
+    .suggestions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .suggestion-chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid #2a2010;
+      background: #111111;
+      color: #a09070;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .suggestion-chip:hover {
+      border-color: #f5a623;
+      color: #f5a623;
+      background: #f5a62311;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 12px;
+      font-size: 0.72rem;
+      color: #3a3020;
     }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">Share<span>dum</span></div>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <div class="wallet-info" id="walletInfo">
-      <div class="dot"></div>
-      <span class="address" id="shortAddress"></span>
-      <span class="balance" id="balanceDisplay"></span>
-    </div>
+  <div>
+    <div class="logo">ॐ Vedic<span>Bot</span></div>
+    <div class="logo-sub">Ancient Wisdom · Modern Interface</div>
+  </div>
+  <div class="header-right">
+    <div class="wallet-badge" id="walletBadge"></div>
     <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
   </div>
 </header>
 
-<main>
-  <!-- Network Card -->
-  <div class="card">
-    <h3>Network</h3>
-    <div id="networkBadge">Not connected</div>
-    <div class="sub" id="chainIdDisplay"></div>
-    <button class="btn" id="addNetworkBtn" style="margin-top:14px;font-size:0.8rem;padding:8px 14px;" onclick="addShardeumNetwork()">
-      + Add Shardeum Testnet
-    </button>
+<div class="app-container">
+
+  <!-- Language Bar -->
+  <div class="lang-bar">
+    <span class="lang-label">Language:</span>
+    <button class="lang-btn active" onclick="setLang('english', this)">English</button>
+    <button class="lang-btn" onclick="setLang('hindi', this)">हिन्दी</button>
+    <button class="lang-btn" onclick="setLang('tamil', this)">தமிழ்</button>
+    <button class="lang-btn" onclick="setLang('telugu', this)">తెలుగు</button>
+    <button class="lang-btn" onclick="setLang('sanskrit', this)">संस्कृत</button>
   </div>
 
-  <!-- Wallet Card -->
-  <div class="card">
-    <h3>Wallet Address</h3>
-    <div class="value" id="fullAddress" style="font-size:0.85rem;font-family:monospace;">—</div>
-    <div class="sub" id="nativeBalance">Balance: —</div>
-  </div>
-
-  <!-- SimpleStorage interaction -->
-  <div class="action-card">
-    <h2>SimpleStorage Contract</h2>
-    <p style="font-size:0.85rem;color:#64748b;margin-bottom:16px;">
-      Enter your deployed <code style="color:#a78bfa">SimpleStorage</code> contract address to read or update the stored value.
-    </p>
-    <div class="input-row" style="margin-bottom:10px;">
-      <input id="contractAddress" type="text" placeholder="Contract address (0x...)" />
-      <button onclick="loadContract()">Load</button>
+  <!-- Chat Window -->
+  <div class="chat-window" id="chatWindow">
+    <div class="welcome" id="welcomeMsg">
+      <div class="om">ॐ</div>
+      <h2>Namaste, Seeker of Knowledge</h2>
+      <p>Ask me anything about the Vedas, Upanishads,<br/>Bhagavad Gita, Sanskrit, or Vedic philosophy.</p>
     </div>
-    <div id="contractSection" style="display:none;margin-top:16px;">
-      <div style="margin-bottom:12px;">
-        <span style="color:#64748b;font-size:0.85rem;">Stored Value: </span>
-        <span id="storedValue" style="font-size:1.1rem;font-weight:700;color:#a78bfa;">—</span>
-        <button class="btn" onclick="readValue()" style="font-size:0.8rem;padding:6px 14px;margin-left:10px;">Refresh</button>
-      </div>
-      <div class="input-row">
-        <input id="newValue" type="number" placeholder="New value" min="0" />
-        <button onclick="setValue()">Set Value</button>
-      </div>
-    </div>
-    <div id="statusMsg"></div>
   </div>
-</main>
 
-<footer>Built on Shardeum &mdash; EVM-compatible Layer 1</footer>
+  <!-- Suggestion Chips -->
+  <div class="suggestions" id="suggestions">
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">What are the four Vedas?</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">Explain the concept of Dharma</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">A shloka on inner peace</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">What is Moksha?</button>
+  </div>
+
+  <!-- Input Area -->
+  <div class="input-area">
+    <textarea id="messageInput" rows="1" placeholder="Ask about Vedic wisdom…"
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">➤</button>
+  </div>
+
+</div>
+
+<footer>Built with ❤️ on Shardeum &mdash; Powered by Vedic Knowledge</footer>
 
 <script>
-  // Shardeum Testnet (Mezame)
+  const API_URL = "http://localhost:8000";
+  let currentLang = "english";
+  let sessionId = "session_" + Math.random().toString(36).substr(2, 9);
+  let isLoading = false;
+
+  // ── Language ──
+  function setLang(lang, btn) {
+    currentLang = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ── Auto resize textarea ──
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+
+  // ── Enter to send ──
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  // ── Suggestion chips ──
+  function sendSuggestion(btn) {
+    document.getElementById('messageInput').value = btn.textContent;
+    sendMessage();
+  }
+
+  // ── Send message ──
+  async function sendMessage() {
+    if (isLoading) return;
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    // Hide welcome & suggestions
+    document.getElementById('welcomeMsg').style.display = 'none';
+    document.getElementById('suggestions').style.display = 'none';
+
+    input.value = '';
+    input.style.height = 'auto';
+
+    appendMessage('user', message);
+    showTyping();
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+
+    try {
+      const res = await fetch(`${API_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: message,
+          session_id: sessionId,
+          language: currentLang
+        })
+      });
+
+      const data = await res.json();
+      removeTyping();
+      appendMessage('bot', data.response);
+    } catch (err) {
+      removeTyping();
+      appendMessage('bot', '⚠️ Could not connect to VedicBot. Please ensure the backend is running.');
+    }
+
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+  }
+
+  // ── Append message bubble ──
+  function appendMessage(role, text) {
+    const chatWindow = document.getElementById('chatWindow');
+    const div = document.createElement('div');
+    div.className = `message ${role === 'user' ? 'user' : 'bot'}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = `avatar ${role === 'user' ? 'user-av' : 'bot'}`;
+    avatar.textContent = role === 'user' ? '🙏' : 'ॐ';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = text
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/\n\n/g, '</p><p>')
+  .replace(/\n/g, '<br>')
+  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+  .replace(/\*(.*?)\*/g, '<em>$1</em>');
+bubble.style.lineHeight = '1.8';
+
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    chatWindow.appendChild(div);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  // ── Typing indicator ──
+  function showTyping() {
+    const chatWindow = document.getElementById('chatWindow');
+    const div = document.createElement('div');
+    div.className = 'message bot';
+    div.id = 'typingIndicator';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar bot';
+    avatar.textContent = 'ॐ';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    chatWindow.appendChild(div);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+  }
+
+  // ── Wallet connect ──
   const SHARDEUM_TESTNET = {
-    chainId: '0x1FB7',       // 8119 in hex
+    chainId: '0x1FB7',
     chainName: 'Shardeum Mezame (Testnet)',
     nativeCurrency: { name: 'SHM', symbol: 'SHM', decimals: 18 },
     rpcUrls: ['https://api-mezame.shardeum.org'],
     blockExplorerUrls: ['https://explorer-mezame.shardeum.org']
   };
 
-  const SIMPLE_STORAGE_ABI = [
-    "function value() view returns (uint256)",
-    "function owner() view returns (address)",
-    "function setValue(uint256 _value)",
-    "event ValueUpdated(address indexed setter, uint256 oldValue, uint256 newValue)"
-  ];
-
-  let provider, signer, account, storageContract;
-
-  // ── Wallet connection ──────────────────────────────────────────────────────
   async function connectWallet() {
     if (!window.ethereum) {
-      return setStatus('MetaMask not detected. Please install it.', 'error');
+      alert('Please install MetaMask to connect your wallet.');
+      return;
     }
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
-      provider = new ethers.BrowserProvider(window.ethereum);
-      signer   = await provider.getSigner();
-      account  = await signer.getAddress();
-      await updateUI();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const account = await signer.getAddress();
+      const short = account.slice(0, 6) + '…' + account.slice(-4);
+
+      document.getElementById('connectBtn').textContent = 'Connected';
+      document.getElementById('connectBtn').classList.add('connected');
+      document.getElementById('walletBadge').textContent = short;
+      document.getElementById('walletBadge').classList.add('visible');
     } catch (e) {
-      setStatus(e.message, 'error');
+      alert('Wallet connection failed: ' + e.message);
     }
-  }
-
-  async function updateUI() {
-    const network = await provider.getNetwork();
-    const chainId = Number(network.chainId);
-    const bal = await provider.getBalance(account);
-    const balEth = parseFloat(ethers.formatEther(bal)).toFixed(4);
-
-    // Header wallet info
-    document.getElementById('shortAddress').textContent = shortAddr(account);
-    document.getElementById('balanceDisplay').textContent = `${balEth} SHM`;
-    document.getElementById('walletInfo').classList.add('visible');
-
-    // Connect button → connected state
-    const btn = document.getElementById('connectBtn');
-    btn.textContent = 'Connected';
-    btn.classList.add('connected');
-
-    // Cards
-    document.getElementById('fullAddress').textContent = account;
-    document.getElementById('nativeBalance').textContent = `Balance: ${balEth} SHM`;
-
-    // Network badge
-    const badge = document.getElementById('networkBadge');
-    document.getElementById('chainIdDisplay').textContent = `Chain ID: ${chainId}`;
-    if (chainId === 8119) {
-      badge.textContent = '✓ Shardeum Testnet';
-      badge.classList.add('correct');
-      document.getElementById('addNetworkBtn').classList.remove('visible');
-    } else {
-      badge.textContent = `Chain: ${chainId}`;
-      badge.classList.remove('correct');
-      document.getElementById('addNetworkBtn').classList.add('visible');
-    }
-  }
-
-  // ── Add / switch network ───────────────────────────────────────────────────
-  async function addShardeumNetwork() {
-    try {
-      await window.ethereum.request({
-        method: 'wallet_addEthereumChain',
-        params: [SHARDEUM_TESTNET]
-      });
-      await updateUI();
-    } catch (e) {
-      setStatus(e.message, 'error');
-    }
-  }
-
-  // ── SimpleStorage helpers ──────────────────────────────────────────────────
-  async function loadContract() {
-    const addr = document.getElementById('contractAddress').value.trim();
-    if (!addr) return setStatus('Enter a contract address.', 'error');
-    if (!provider) return setStatus('Connect your wallet first.', 'error');
-    try {
-      storageContract = new ethers.Contract(addr, SIMPLE_STORAGE_ABI, signer);
-      await readValue();
-      document.getElementById('contractSection').style.display = 'block';
-      setStatus('Contract loaded!', 'success');
-    } catch (e) {
-      setStatus('Failed to load contract: ' + e.message, 'error');
-    }
-  }
-
-  async function readValue() {
-    if (!storageContract) return;
-    try {
-      const val = await storageContract.value();
-      document.getElementById('storedValue').textContent = val.toString();
-    } catch (e) {
-      setStatus('Read failed: ' + e.message, 'error');
-    }
-  }
-
-  async function setValue() {
-    if (!storageContract) return;
-    const num = document.getElementById('newValue').value;
-    if (num === '') return setStatus('Enter a value.', 'error');
-    try {
-      setStatus('Sending transaction…');
-      const tx = await storageContract.setValue(num);
-      setStatus('Waiting for confirmation…');
-      await tx.wait();
-      await readValue();
-      setStatus('Value updated!', 'success');
-    } catch (e) {
-      setStatus(e.reason || e.message, 'error');
-    }
-  }
-
-  // ── Utils ──────────────────────────────────────────────────────────────────
-  function shortAddr(addr) {
-    return addr.slice(0, 6) + '…' + addr.slice(-4);
-  }
-
-  function setStatus(msg, type = '') {
-    const el = document.getElementById('statusMsg');
-    el.textContent = msg;
-    el.className = type;
-  }
-
-  // Listen for account / network changes
-  if (window.ethereum) {
-    window.ethereum.on('accountsChanged', () => location.reload());
-    window.ethereum.on('chainChanged',    () => location.reload());
   }
 </script>
 </body>
